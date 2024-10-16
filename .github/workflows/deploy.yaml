@@ -1,4 +1,4 @@
-name: Deploy modules to prod project
+name: Deploy modules to project
 on:
   push:
     branches:
@@ -12,7 +12,7 @@ on:
 env:
   PYTHON_VERSION: '3.11'
 jobs:
-  build-modules:
+  build-modules-test:
     runs-on: ubuntu-latest
     environment: test
     env:
@@ -44,3 +44,35 @@ jobs:
       - name: "Deploy the templates"
         run: |
           cdf-tk deploy --env=test
+  build-modules-prod:
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+        CDF_PROJECT: ${{ secrets.CDF_PROJECT }}
+        IDP_CLIENT_ID: ${{ secrets.IDP_CLIENT_ID }}
+        IDP_TOKEN_URL: ${{ secrets.IDP_TOKEN_URL }}
+        DATA_DEVELOPER_OBJECT_ID: ${{ secrets.DATA_DEVELOPER_OBJECT_ID }}
+        DATA_PIPELINE_OEE_OBJECT_ID: ${{ secrets.DATA_PIPELINE_OEE_OBJECT_ID }}
+        ICAPI_EXTRACTORS_OBJECT_ID: ${{ secrets.ICAPI_EXTRACTORS_OBJECT_ID }}
+        DATA_PIPELINE_OEE_CLIENT_ID: ${{ secrets.DATA_PIPELINE_OEE_CLIENT_ID }}
+        ICAPI_EXTRACTORS_CLIENT_ID: ${{ secrets.ICAPI_EXTRACTORS_CLIENT_ID }}
+        CDF_CLUSTER: ${{ secrets.CDF_CLUSTER }}
+        IDP_TENANT_ID: ${{ secrets.IDP_TENANT_ID }}
+        IDP_CLIENT_SECRET: ${{ secrets.IDP_CLIENT_SECRET }}
+        DATA_PIPELINE_OEE_CLIENT_SECRET: ${{ secrets.DATA_PIPELINE_OEE_CLIENT_SECRET }}
+        ICAPI_EXTRACTORS_CLIENT_SECRET: ${{ secrets.ICAPI_EXTRACTORS_CLIENT_SECRET }}
+    name: Deploy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install cdf-tk
+        run: pip install cognite-toolkit==0.3.2
+      - name: "Build the templates"
+        run: cdf-tk build --build-dir=./build --env=prod
+      - name: "Deploy"
+        run: echo "Deploying to ${CDF_PROJECT} with ${CDF_CLUSTER}"
+      - name: "Deploy dry run the templates"
+        run: |
+         cdf-tk deploy --env=prod --dry-run
